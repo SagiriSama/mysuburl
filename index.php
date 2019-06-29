@@ -7,17 +7,19 @@ if(!$sub_url_list){
 	exit('list read fail');
 }else{
   	$sub_url_list = mb_convert_encoding($sub_url_list, 'UTF-8', 'UTF-8,GBK,GB2312,BIG5');
-    $sub_url = explode("\n", $sub_url_list);
+	$sub_url = explode("\n", $sub_url_list);
   	$sub_url = array_filter($sub_url);
 }
 /*判断链接是否合法*/
 if($_GET['s']) {
 	$surl = $_GET['s'];
+	$mach_query = preg_replace('/s\=/i', '', $_SERVER['QUERY_STRING']);
+  	if($surl !== $mach_query)$surl = $mach_query;
  	$isMatched = preg_match('/[a-zA-z]+:\/\/(.*?)[.](.*?)\//', $surl, $code_matches);
   	if($isMatched){
-    	$ssr_url = $code_matches[1].'.'.$code_matches[2];
+    		$ssr_url = $code_matches[1].'.'.$code_matches[2];
   		$url_check = in_array($ssr_url, $sub_url, TRUE);
-    }
+	}
 } else {
 	header('HTTP/1.1 404 Not Found');
 	header("status: 404 Not Found");
@@ -41,18 +43,18 @@ if($isMatched && $url_check) {
 	if($getsurl === FALSE||$httpCode >= "300" ){
 		header('HTTP/1.1 404 Not Found');
 		header("status: 404 Not Found");
-      	exit();
+      		exit();
 	} else {
 		echo $getsurl;
 	}
 } else {
 	header('HTTP/1.1 404 Not Found');
 	header("status: 404 Not Found");
-  	if($url_check){
-  		exit();
-    } else {
-      	echo "<pre>Authorization URL:\n".$sub_url_list. "<pre>";
-    }
+	if($url_check){
+		exit();
+	} else {
+		echo "<pre>Authorization URL:\n".$sub_url_list. "<pre>";
+	}
 }
 
 /*生成随机IP*/
