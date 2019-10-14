@@ -1,35 +1,30 @@
 <?php 
-/*读取许可链接列表*/
 $t = time();
-$sub_url_list = @file_get_contents("https://raw.githubusercontent.com/SagiriSama/mysuburl/master/url.dat?".$t);
-$sub_url = array();
-if(!$sub_url_list){
-	exit('list read fail');
-}else{
-  	$sub_url_list = mb_convert_encoding($sub_url_list, 'UTF-8', 'UTF-8,GBK,GB2312,BIG5');
-	$sub_url = explode("\n", $sub_url_list);
-  	$sub_url = array_filter($sub_url);
+$surl = "https://port.xshell.us/static/api/node.json";
+$json = json_decode(get_ssr_json($surl, $t) , true);
+$ssr = array_column($json, 'ssr-link');
+foreach ($ssr as &$v) {
+    $v = substr($v, 6);
+    $v = base64_url_decode($v);
+    $arr = explode('&group=', $v);
+	$v = 'ssr://' . base64_url_encode($arr[0] . '&group=' . base64_url_encode('MDSS-Free'));
 }
-/*判断链接是否合法*/
-if($_GET['s']) {
-	$surl = $_GET['s'];
-	$mach_query = preg_replace('/s\=/i', '', $_SERVER['QUERY_STRING']);
-  	if($surl !== $mach_query)$surl = $mach_query;
- 	$isMatched = preg_match('/[a-zA-z]+:\/\/(.*?)[.](.*?)\//', $surl, $code_matches);
-  	if($isMatched){
-    	$ssr_url = $code_matches[1].'.'.$code_matches[2];
-  		$url_check = in_array($ssr_url, $sub_url, TRUE);
-	}
-} else {
-	header('HTTP/1.1 404 Not Found');
-	header("status: 404 Not Found");
-	exit();
+$res = base64_url_encode(implode(PHP_EOL, $ssr));
+echo $res;
+
+/*ssr-link 加密解密*/
+function base64_url_encode($input) {
+    return strtr(base64_encode($input), array('+' => '-', '/' => '_', '=' => ''));
 }
+function base64_url_decode($input) {
+    return base64_decode(strtr($input, '-_', '+/'));
+}
+
 /*拉取订阅内容*/
-if($isMatched && $url_check) {
+function get_ssr_json($surl, $t) {
 	$headers = randIp();
 	$ch = curl_init();
-	curl_setopt($ch,CURLOPT_URL,$surl);
+	curl_setopt($ch,CURLOPT_URL,$surl."?".$t);
 	curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
 	curl_setopt($ch,CURLOPT_HEADER,0);
 	curl_setopt($ch,CURLOPT_USERAGENT,"Mozilla/5.0 (Windows; U; Windows NT 5.2) AppleWebKit/525.13 (KHTML, like Gecko) Chrome/0.2.149.27 ");
@@ -37,23 +32,15 @@ if($isMatched && $url_check) {
 	curl_setopt($ch,CURLOPT_HTTPHEADER,$headers);
   	/*设置超时限制防止死循环*/
 	curl_setopt($ch,CURLOPT_TIMEOUT,5);
-	$getsurl = curl_exec($ch);
+	$get_sub_json = curl_exec($ch);
 	$httpCode = curl_getinfo($ch,CURLINFO_HTTP_CODE);
 	curl_close($ch);
-	if($getsurl === FALSE||$httpCode >= "300" ){
+	if($get_sub_json === FALSE||$httpCode >= "300" ) {
 		header('HTTP/1.1 404 Not Found');
 		header("status: 404 Not Found");
-      	exit();
-	} else {
-		echo $getsurl;
-	}
-} else {
-	header('HTTP/1.1 404 Not Found');
-	header("status: 404 Not Found");
-	if($url_check){
 		exit();
 	} else {
-		echo "<pre>Authorization URL:\n".$sub_url_list. "<pre>";
+		return $get_sub_json;
 	}
 }
 
