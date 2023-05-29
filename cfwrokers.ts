@@ -6,7 +6,7 @@ const subUrlList = [
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  const surl = url.searchParams.get('s');
+  const surl = decodeURIComponent(url.searchParams.get('s'));
   if (!surl) {
     return new Response('Authorization URL:\n' + subUrlList.join('\n'), {
       status: 404,
@@ -48,9 +48,15 @@ async function handleRequest(request) {
   crypto.getRandomValues(ipRank);
   const randomIp =
     ipRank[0] % (ipLong[randKey][1] - ipLong[randKey][0] + 1) + parseInt(ipLong[randKey][0], 10);
+  const ipv4 = [
+    (randomIp >> 24) & 0xff,
+    (randomIp >> 16) & 0xff,
+    (randomIp >> 8) & 0xff,
+    randomIp & 0xff,
+  ].join('.');
   const headers = {
-    'Client-IP': new Uint8Array([randomIp >> 24, randomIp >> 16, randomIp >> 8, randomIp]),
-    'X-Forwarded-For': new Uint8Array([randomIp >> 24, randomIp >> 16, randomIp >> 8, randomIp]),
+    'CF-Connecting-IP': ipv4,
+    'X-Forwarded-For': ipv4,
     'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.2) AppleWebKit/525.13 (KHTML, like Gecko) Chrome/0.2.149.27',
   };
 
